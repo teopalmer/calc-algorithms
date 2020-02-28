@@ -7,43 +7,8 @@
 # x                      Найти корень f(x) методом обратной интерполяции #
 import math as m
 
-def f(x):
-    return x*x
-
-
-def average(x, y):
-    return (x + y)/2
-
-
-def closeEnough(x, y, mid):
-    if abs(x - y) < 0.01*abs(mid):
-        return 1
-    return 0
-
-
-def search(f, negPoint, posPoint):
-    midPoint = average(negPoint, posPoint)
-    if closeEnough(negPoint, posPoint, midPoint):
-        return midPoint
-    testValue = calc_polynomials([negPoint, posPoint], x)
-    if testValue > 0:
-        return search(f, negPoint, midPoint)
-    elif testValue < 0:
-        return search(f, midPoint, posPoint)
-    return midPoint
-
-
-def halfIntervalMethod(a, b):
-    aVal = f(a)
-    bVal = f(b)
-    if aVal > 0 and bVal < 0:
-        return search(f, b, a)
-    elif aVal < 0 and bVal > 0:
-        return search(f, a, b)
-    else:
-        print("У аргументов не разные знаки")
-        return 0
-
+def f(x, y):
+    return x*y
 
 def revert_dots(list):
     for a in list:
@@ -51,21 +16,35 @@ def revert_dots(list):
         a[2] = a[0]
         a[1] = temp
         a[0] = temp
-    #print(list)
 
+def float_array(line):
+    d = []
+    line = line.split(" ")
+    for a in line:
+        d.append(float(a))
+    return d
 
-def get_input(dots, nx):
+def get_input(dots, inp):
     f = open("input.txt", 'r')
     for line in f:
         if line.find(" ") != -1:
-            oneDot = [float(line.split(" ")[0]),
-                      float(line.split(" ")[0]),
-                      float(line.split(" ")[1])]
-            dots.append(oneDot)
+            dots.append(float_array(line))
         else:
-            nx.append(line)
+            inp.append(line)
     return 0
 
+def get_base(arx, ary):
+    dots = []
+    for i in range(len(arx)):
+        dots.append([arx[i], arx[i], ary[i]])
+    return dots
+
+def get_polbase(arx, ary):
+    d = []
+    for i in range(len(arx)):
+        d.append([ary[i], ary[i], arx[i]])
+    print(d)
+    return d
 
 def get_dots(list, x, n):
     dots = list
@@ -93,9 +72,7 @@ def get_dots(list, x, n):
     d.sort()
     return d
 
-
 def calc_div_diff(pi, pj, x):
-    #x = (pj[1] - pi[0])/2
     try:
         y = pi[2] + ((pj[2] - pi[2])*(x - pi[0]))/(pj[1] - pi[0])
         return y
@@ -124,25 +101,26 @@ def calc_polynomials(dots, x):
 
 if __name__ == '__main__':
     list = []
-    nx = []
-    get_input(list, nx)
+    inp = []
+    pol = []
+    get_input(list, inp)
     print("Введенные точки:")
     print(*list, sep="\n")
-    n = int(nx[0])
-    x = float(nx[1])
-    hv = float(halfIntervalMethod(list[0][0], list[len(list) - 1][0]))
-    dots = get_dots(list, x, n)
+    ny, nx = int(inp[0]), int(inp[1])
+    x, y = float(inp[2]), float(inp[3])
+    arx, ary = list[0], list[1]
 
-    print("\nИспользуемые точки: ", dots, '\n')
-    print("Значение функции: {}".format(f(x)))
-    print("Значение с помощью интерполяции: {}\n".format(calc_polynomials(dots, x)))
-    print("Корень методом половинного деления: {}".format(hv))
-    revert_dots(list)
+    for i in range(2, len(list)):
+        base = get_base(arx, list[i])
+        dots = get_dots(base, x, nx)
+        pol.append(calc_polynomials(dots, x))
 
-    get_input(list, nx)
-    revert_dots(list)
-    list.sort()
-    #print(list)
-    dots = get_dots(list, 0, n)
-    print("Корень с помощью интерполяции: ", calc_polynomials(dots, 0))
+    d = get_polbase(pol, ary)
+    d.sort()
+    print(d)
+    findots = get_dots(d, y, ny)
+    cx = calc_polynomials(findots, y)
+    print("Значение функции: {}".format(f(x, y)))
+    print("Значение с помощью интерполяции: {}\n".format(cx))
+
 

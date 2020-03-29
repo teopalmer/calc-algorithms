@@ -5,122 +5,101 @@
 # Таблица                Найти y(x) и сравнить с точным значением        #
 # n                      Найти корень f(x) методом половинного деления   #
 # x                      Найти корень f(x) методом обратной интерполяции #
-import math as m
+# Аппроксимация ф-и, восстановление ф-и по ее дискретному значению
+# Многомерная интерполяция
+
+from math import ceil
 
 def f(x, y):
-    return x*y
+    return x ** 2 + y ** 2
 
-def revert_dots(list):
-    for a in list:
-        temp = a[2]
-        a[2] = a[0]
-        a[1] = temp
-        a[0] = temp
+def print_matrix(x, y, z):
+    print("   y\\x ", end='')
+    for i in x:
+        print("{:6}".format(i), end=' ')
 
-def float_array(line):
-    d = []
-    line = line.split(" ")
-    for a in line:
-        d.append(float(a))
-    return d
+    for i in range(len(y)):
+        print("\n{:6}".format(y[i]), end=' ')
+        for j in z[i]:
+            print("{:6}".format(j), end=' ')
+    print('\n')
 
-def get_input(dots, inp):
-    f = open("input.txt", 'r')
-    for line in f:
-        if line.find(" ") != -1:
-            dots.append(float_array(line))
-        else:
-            inp.append(line)
-    return 0
+def get_matrix(x_0, x_step, x_n, y_0, y_step, y_n):
+    x = [x_0 + i * x_step for i in range(x_n)]
+    y = [y_0 + i * y_step for i in range(y_n)]
+    z = [[f(i, j) for i in x] for j in y]
+    return x, y, z
 
-def get_base(arx, ary):
-    dots = []
-    for i in range(len(arx)):
-        dots.append([arx[i], arx[i], ary[i]])
-    return dots
+def get_matr(tbl, n):
+    for i in range(n):
+        tmp = []
+        for j in range(n - i):
+            tmp.append((tbl[i + 1][j] - tbl[i + 1][j + 1])
+                       / (tbl[0][j] - tbl[0][i + j + 1]))
+        tbl.append(tmp)
+    return tbl
 
-def get_polbase(arx, ary):
-    d = []
-    for i in range(len(arx)):
-        d.append([ary[i], ary[i], arx[i]])
-    print(d)
-    return d
+def get_dots(a, n, x):
+    a_len = len(a)
+    i_near = min(range(a_len), key=lambda i: abs(a[i] - x))
+    space_needed = ceil(n / 2)
 
-def get_dots(list, x, n):
-    dots = list
-    d = []
-    i = 0
-    step = 0
+    if (i_near + space_needed + 1 > a_len):
+        i_end = a_len
+        i_start = a_len - n
+    elif (i_near < space_needed):
+        i_start = 0
+        i_end = n
+    else:
+        i_start = i_near - space_needed + 1
+        i_end = i_start + n
 
-    while step < n + 1 and i < len(dots):
-        if dots[i][0] >= x >= dots[i - 1][0]:
-            if step % 2 != 0:
-                d.append(dots[i])
-                dots.pop(i)
-            else:
-                d.append(dots[i - 1])
-                dots.pop(i - 1)
-            i = 0
-            step += 1
-        i += 1
-    #print(dots)
-    for i in range(n - step):
-        if (i < len(dots)):
-            d.append(dots[i])
-        else:
-            print("Слишком мало данных")
-    d.sort()
-    return d
+    return i_start, i_end
 
-def calc_div_diff(pi, pj, x):
-    try:
-        y = pi[2] + ((pj[2] - pi[2])*(x - pi[0]))/(pj[1] - pi[0])
-        return y
-    except ZeroDivisionError:
-        return pi[2]
 
-def calc_polynomials(dots, x):
-    diffs = []
+def interp_multi(x, y, z, x_val, y_val, x_n, y_n):
+    ix_0, ix_end = get_dots(x, x_n + 1, x_val)
+    iy_0, iy_end = get_dots(y, y_n + 1, y_val)
 
-    if (len(dots)) == 1:
-        print("Введена нулевая степень полинома")
-        return 0
+    x = x[ix_0: ix_end]
+    y = y[iy_0: iy_end]
+    z = z[iy_0: iy_end]
+    for i in range(y_n + 1):
+        z[i] = z[i][ix_0: ix_end]
 
-    if len(dots) == 2:
-        return calc_div_diff(dots[0], dots[1], x)
+    res = [interp_newt([x, z[i]], x_n, x_val)
+           for i in range(y_n + 1)]
+    return interp_newt([y, res], y_n, y_val)
 
-    for i in range(1, len(dots)):
-        y = dots[i - 1][2]
-        xi = dots[i - 1][0]
-        xk = dots[i][1]
-        diffs.append([xi, xk,
-                      calc_div_diff(dots[i - 1], dots[i], x)])
 
-    return calc_polynomials(diffs, x)
-
+def interp_newt(tbl, n, x):
+    matr = get_matr(tbl, n)
+    tmp = 1
+    res = 0
+    for i in range(n + 1):
+        res += tmp * matr[i + 1][0]
+        tmp *= (x - matr[0][i])
+    return res
 
 if __name__ == '__main__':
-    list = []
-    inp = []
-    pol = []
-    get_input(list, inp)
-    print("Введенные точки:")
-    print(*list, sep="\n")
-    ny, nx = int(inp[0]), int(inp[1])
-    x, y = float(inp[2]), float(inp[3])
-    arx, ary = list[0], list[1]
+    x_0 = float(input("X0: "))
+    x_step = float(input("Step X: "))
+    x_n = int(input("Number of dots: "))
 
-    for i in range(2, len(list)):
-        base = get_base(arx, list[i])
-        dots = get_dots(base, x, nx)
-        pol.append(calc_polynomials(dots, x))
+    y_0 = float(input("Y0: "))
+    y_step = float(input("Step Y: "))
+    y_n = int(input("Number of dots: "))
 
-    d = get_polbase(pol, ary)
-    d.sort()
-    print(d)
-    findots = get_dots(d, y, ny)
-    cx = calc_polynomials(findots, y)
-    print("Значение функции: {}".format(f(x, y)))
-    print("Значение с помощью интерполяции: {}\n".format(cx))
+    x, y, z = get_matrix(x_0, x_step, x_n, y_0, y_step, y_n)
+    print("\nMatrix:")
+    print_matrix(x, y, z)
 
+    x_n = int(input("N(x): "))
+    x_find = float(input("X: "))
 
+    y_n = int(input("N(y): "))
+    y_find = float(input("Y: "))
+
+    found = interp_multi(x, y, z, x_find, y_find, x_n, y_n)
+    print("\nInterpolated   : ", found)
+    print("F(x, y)        : ", f(x_find, y_find))
